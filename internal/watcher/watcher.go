@@ -2,8 +2,8 @@
 //
 // Технология: SharedInformer из client-go. Это НЕ поллинг каждые N
 // секунд: informer держит watch-соединение с API-сервером и получает
-// изменения push'ем, а локальный кэш экономит запросы. On resync
-// (периодическая сверка) обработчики вызываются с old == new — наша
+// изменения push'ем, а локальный кэш экономит запросы. При resync
+// (периодической сверке) обработчики вызываются с old == new — наша
 // логика сравнения счётчиков это отфильтрует: повторов не будет.
 package watcher
 
@@ -37,6 +37,13 @@ func New(pub *publisher.Publisher, cluster string, ignored []string, log *slog.L
 	return &Watcher{pub: pub, cluster: cluster, ignore: ign, log: log}
 }
 
+// ignored — проверка namespace из списка шумовых (kube-system и пр.):
+// их поды падают по служебным причинам и только мусорят в инцидентах.
+func (w *Watcher) ignored(ns string) bool {
+	_, ok := w.ignore[ns]
+	return ok
+}
+
 // Run запускает informer и блокируется до отмены контекста.
 func (w *Watcher) Run(ctx context.Context, clientset kubernetes.Interface) error {
 	// Resync каждые 30 секунд: страховка от пропущенных событий при
@@ -62,6 +69,8 @@ func (w *Watcher) Run(ctx context.Context, clientset kubernetes.Interface) error
 		},
 		// Удаление: событие «под исчез» — заготовка для корреляции
 		// (aggregator свяжет удаление с предыдущими падениями).
+		// Внимание: при resync-проходе удалений НЕ бывает — informer
+		// не выкидывает существующие объекты, так что повторов нет.
 		DeleteFunc: func(obj any) {
 			pod, ok := obj.(*corev1.Pod)
 			if !ok {
@@ -70,7 +79,9 @@ func (w *Watcher) Run(ctx context.Context, clientset kubernetes.Interface) error
 			if w.ignored(pod.Namespace) {
 				return
 			}
-			w.emit(ctx, events.PodDeleted, pod.Namespace, pod.Name, "", "", 0, time.Now())
+			// Сигнатура emit требует container и reason — при удалении
+			// пода они неизвестны, передаём пустые.
+			w.emit(ctx, events.PodDeleted, pod.Namespace, pod.Name, "", "", "", 0, time.Now())
 		},
 	})
 	if err != nil {
@@ -78,7 +89,10 @@ func (w *Watcher) Run(ctx context.Context, clientset kubernetes.Interface) error
 	}
 
 	factory.Start(ctx.Done())
-	factory.WaitForStop(ctx.Done())
+	// Ожидание остановки: у factory нет WaitForStop — блокируемся на
+	// контексте. Когда ctx отменят (Ctrl+C в main), Start-горутины
+	// завершатся сами, а мы выйдем из select и вернём ошибку контекста.
+	<-ctx.Done()
 	return ctx.Err()
 }
 
@@ -92,14 +106,17 @@ func (w *Watcher) onPod(ctx context.Context, old, new *corev1.Pod) {
 	for i := range new.Status.ContainerStatuses {
 		cs := &new.Status.ContainerStatuses[i]
 
+		// Предыдущий счётчик рестартов этого контейнера.
 		var prev int32
 		if old != nil && i < len(old.Status.ContainerStatuses) {
 			prev = old.Status.ContainerStatuses[i].RestartCount
 		}
 		if cs.RestartCount <= prev {
-			continue
+			continue // рестартов не прибавилось — ничего не делаем
 		}
 
+		// Причина последнего завершения контейнера — здесь лежат и
+		// OOMKilled, и Error, и код выхода.
 		reason, msg, finished := "", "", time.Now()
 		if ls := cs.LastTerminationState.Terminated; ls != nil {
 			reason = ls.Reason
@@ -116,6 +133,9 @@ func (w *Watcher) onPod(ctx context.Context, old, new *corev1.Pod) {
 	}
 }
 
+// emit — собрать событие и опубликовать. ID включает счётчик рестартов:
+// один и тот же рестарт при повторном проходе даст тот же ID, а разные
+// рестарты — разные. Агрегатор сможет дедуплицировать по ID.
 func (w *Watcher) emit(ctx context.Context, kind events.Kind, ns, pod, container, reason, msg string, restarts int32, at time.Time) {
 	id := fmt.Sprintf("%s/%s/%s/%s/%s/%d", w.cluster, ns, pod, container, kind, restarts)
 	e := events.Event{
