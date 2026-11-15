@@ -42,7 +42,7 @@ Modelfile.translate
 .env.*
 !.env.example
 
-# --- локальные данные (volume из docker-compose) ---
+# --- локальные данные ---
 /data/
 postgres_data/
 testdata/
@@ -51,6 +51,7 @@ testdata/
 highscore.json
 settings.json
 bench.json
+/sentinel.exe
 
 # --- OS ---
 .DS_Store
