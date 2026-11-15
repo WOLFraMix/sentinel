@@ -1,0 +1,40 @@
+# --- служебное / репозиторий ---
+.git/
+.github/
+.gitignore
+docs/
+docker-compose.yml
+.vscode/
+.idea/
+
+# --- секреты ---
+.env
+.env.*
+
+# --- локальные данные (volume из docker-compose) ---
+data/
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# --- артефакты сборки и тестов ---
+dist/
+build/
+bin/
+*.exe
+recall
+main
+*.zip
+*.log
+coverage.*
+
+# --- документация и прочее локальное ---
+*.md
+notes.txt
+highscore.json
+settings.json
+struct.png
+instruction.txt

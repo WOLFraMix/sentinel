@@ -1,0 +1,69 @@
+# --- сборка Go ---
+/main
+/recall
+*.exe
+*.test
+*.out
+*.prof
+coverage.html
+coverage.out
+
+# --- артефакты сборки ---
+build/
+/bin/
+/dist/
+*.zip
+*.dll
+*.so
+
+# --- SQLite (база и WAL-артефакты) ---
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# --- логи ---
+*.log
+/logs/
+
+# --- IDE / tooling ---
+.vscode/
+.gigacode_vsc/
+.gigarc
+.idea/
+*.iml
+*.swp
+Modelfile.translate
+
+# --- env / secrets ---
+.env
+.env.*
+!.env.example
+
+# --- локальные данные (volume из docker-compose) ---
+/data/
+postgres_data/
+testdata/
+
+# --- прочие локальные файлы ---
+highscore.json
+settings.json
+bench.json
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- личные заметки ---
+/instruction.txt
+/notes.txt
+/struct.png
+/architecture.png
+*.docx
+*.pdf
+*.doc
+*.text
+*.txt
