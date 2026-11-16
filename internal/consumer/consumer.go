@@ -68,13 +68,16 @@ func (c *Consumer) Run(ctx context.Context) error {
 		return fmt.Errorf("consume: %w", err)
 	}
 
-	// Блокируемся до отмены контекста, потом останавливаем пул
-	// обработчиков и даём им 5 секунд на завершение текущих сообщений.
+	// Блокируемся до отмены контекста (Ctrl+C). У ConsumeContext нет
+	// ни Done, ни возвращаемого значения у Drain(): Drain прекращает
+	// приём новых сообщений и дожидается обработки уже взятых, а
+	// ошибка завершения приходит в канал Closed().
 	<-ctx.Done()
-	conCtx.Stop()
+	conCtx.Drain()
 	select {
-	case <-conCtx.Done():
+	case <-conCtx.Closed():
 	case <-time.After(5 * time.Second):
+		// Drain завис — не вечность же ждать выключения.
 	}
 	return nil
 }
