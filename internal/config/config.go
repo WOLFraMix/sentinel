@@ -6,7 +6,6 @@ package config
 
 import (
 	"os"
-	"strconv"
 	"strings"
 )
 
@@ -15,6 +14,8 @@ type Config struct {
 	ClusterName       string   // имя наблюдаемого кластера
 	IgnoredNamespaces []string // шумовые namespace
 	Kubeconfig        string   // явный путь к kubeconfig (для тестов)
+	MongoURL          string   // mongodb://user:pass@host:port
+	MongoDB           string   // имя базы
 }
 
 func Load() Config {
@@ -23,6 +24,8 @@ func Load() Config {
 		ClusterName:       getEnv("SNT_CLUSTER_NAME", "default"),
 		IgnoredNamespaces: splitCSV(getEnv("SNT_IGNORE_NS", "kube-system")),
 		Kubeconfig:        getEnv("SNT_KUBECONFIG", ""),
+		MongoURL:          getEnv("SNT_MONGO_URL", "mongodb://sentinel:sentinel@127.0.0.1:27017"),
+		MongoDB:           getEnv("SNT_MONGO_DB", "sentinel"),
 	}
 }
 
@@ -42,7 +45,3 @@ func splitCSV(s string) []string {
 	}
 	return out
 }
-
-// strconv импортирован заранее: понадобятся числовые параметры
-// (интервалы, пороги) на следующих итерациях — не буду плодить правки.
-var _ = strconv.Itoa

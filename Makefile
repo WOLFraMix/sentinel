@@ -14,3 +14,6 @@ test:
 
 fmt:
 	gofmt -s -w .
+
+run-aggregator:
+	go run ./cmd/aggregator
