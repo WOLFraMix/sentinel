@@ -16,6 +16,7 @@ type Config struct {
 	Kubeconfig        string   // явный путь к kubeconfig (для тестов)
 	MongoURL          string   // mongodb://user:pass@host:port
 	MongoDB           string   // имя базы
+	APIAddr           string   // адрес дашборда, например :8080
 }
 
 func Load() Config {
@@ -26,6 +27,7 @@ func Load() Config {
 		Kubeconfig:        getEnv("SNT_KUBECONFIG", ""),
 		MongoURL:          getEnv("SNT_MONGO_URL", "mongodb://sentinel:sentinel@127.0.0.1:27017"),
 		MongoDB:           getEnv("SNT_MONGO_DB", "sentinel"),
+		APIAddr:           getEnv("SNT_API_ADDR", ":8080"),
 	}
 }
 

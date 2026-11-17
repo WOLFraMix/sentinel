@@ -17,3 +17,6 @@ fmt:
 
 run-aggregator:
 	go run ./cmd/aggregator
+
+run-api:
+	go run ./cmd/api

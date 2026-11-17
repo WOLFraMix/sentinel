@@ -1,0 +1,115 @@
+:root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --red: #f85149;
+    --yellow: #d29922;
+    --green: #3fb950;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+}
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.5 system-ui, -apple-system, sans-serif;
+    padding: 24px;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+h1 {
+    font-size: 20px;
+}
+
+.conn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.dot.on {
+    background: var(--green);
+}
+
+.dot.off {
+    background: var(--red);
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 12px;
+}
+
+.card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--green);
+    border-radius: 8px;
+    padding: 14px;
+}
+
+.card.red {
+    border-left-color: var(--red);
+}
+
+.card.yellow {
+    border-left-color: var(--yellow);
+}
+
+.card .pod {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.card .kind {
+    color: var(--muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+}
+
+.card .meta {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 8px;
+}
+
+.card .count {
+    float: right;
+    font-weight: 700;
+}
+
+.empty {
+    color: var(--muted);
+    margin-top: 40px;
+    text-align: center;
+}
+
+.hidden {
+    display: none;
+}
+
+footer {
+    margin-top: 24px;
+    color: var(--muted);
+    font-size: 12px;
+}

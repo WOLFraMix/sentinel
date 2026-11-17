@@ -1,0 +1,27 @@
+# Инфраструктура Sentinel. Запуск: docker compose up -d
+# Остановка: docker compose down (данные остаются в томах)
+services:
+  nats:
+    image: nats:latest
+    command: "-js"
+    ports:
+      - "4222:4222"   # клиенты
+      - "8222:8222"   # HTTP-мониторинг (/varz, /jsz, /connz)
+    volumes:
+      # Официальный образ хранит JetStream в /data — теперь
+      # события переживают пересоздание контейнера.
+      - nats-data:/data
+
+  mongo:
+    image: mongo:latest
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: sentinel
+      MONGO_INITDB_ROOT_PASSWORD: sentinel
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  nats-data:
+  mongo-data:

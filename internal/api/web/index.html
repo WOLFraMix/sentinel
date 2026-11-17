@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sentinel — статус-борд</title>
+    <link rel="stylesheet" href="/style.css">
+</head>
+
+<body>
+    <header>
+        <h1>🛡 Sentinel</h1>
+        <div class="conn">
+            <span id="conn-dot" class="dot off"></span>
+            <span id="conn-text">подключение…</span>
+        </div>
+    </header>
+    <main>
+        <div id="grid" class="grid"></div>
+        <p id="empty" class="empty hidden">Инцидентов нет. Кластер спокоен 🟢</p>
+    </main>
+    <footer>
+        обновление: <span id="updated">—</span> · SSE
+    </footer>
+    <script src="/app.js"></script>
+</body>
+
+</html>
