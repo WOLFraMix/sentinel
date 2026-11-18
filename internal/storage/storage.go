@@ -14,6 +14,7 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -158,6 +159,7 @@ type Incident struct {
 	Count     int64     `bson:"count" json:"count"`
 	FirstSeen time.Time `bson:"first_seen" json:"first_seen"`
 	LastSeen  time.Time `bson:"last_seen" json:"last_seen"`
+	JiraKey   string    `bson:"jira_key" json:"jira_key,omitempty"`
 }
 
 // ListIncidents — последние инциденты по времени обновления.
@@ -180,4 +182,24 @@ func (s *Storage) ListIncidents(ctx context.Context, limit int) ([]Incident, err
 
 func (s *Storage) Close(ctx context.Context) error {
 	return s.client.Disconnect(ctx)
+}
+
+// GetIncident — инцидент по ключу; nil, если aggregator ещё не записал.
+func (s *Storage) GetIncident(ctx context.Context, key string) (*Incident, error) {
+	var inc Incident
+	err := s.incidents.FindOne(ctx, bson.M{"key": key}).Decode(&inc)
+	if errors.Is(err, mongo.ErrNoDocuments) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &inc, nil
+}
+
+// SetJiraKey — сохранить ключ тикета в инциденте: это дедуп тикетов.
+func (s *Storage) SetJiraKey(ctx context.Context, key, ticketKey string) error {
+	_, err := s.incidents.UpdateOne(ctx, bson.M{"key": key},
+		bson.M{"$set": bson.M{"jira_key": ticketKey}})
+	return err
 }

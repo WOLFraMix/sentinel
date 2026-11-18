@@ -20,3 +20,6 @@ run-aggregator:
 
 run-api:
 	go run ./cmd/api
+
+run-notifier:
+	go run ./cmd/notifier
