@@ -42,7 +42,7 @@ func main() {
 	}
 	defer st.Close(context.Background())
 
-	jc := jira.New(cfg.JiraURL, cfg.JiraEmail, cfg.JiraToken)
+	jc := jira.New(cfg.JiraURL, cfg.JiraEmail, cfg.JiraToken, cfg.JiraProject)
 	log.Info("jira ready", "url", cfg.JiraURL, "project", cfg.JiraProject,
 		"threshold", cfg.AlertThreshold, "window", cfg.AlertWindow)
 
@@ -148,8 +148,27 @@ func (n *notifier) handle(ctx context.Context) func(jetstream.Msg) {
 			e.Reason, e.Restarts, inc.Count,
 			inc.FirstSeen.Format(time.RFC1123), inc.LastSeen.Format(time.RFC1123))
 
-		ticket, err := n.jira.CreateIssue(ctx, n.cfg.JiraProject,
-			n.cfg.JiraIssueType, summary, desc)
+		// Идемпотентность: сначала ищем тикет по метке. Если прошлый
+		// запрос создал тикет, но упал на таймауте ответа — мы найдём
+		// его здесь и не создадим дубль.
+		label := jira.LabelFor(incKey)
+		existing, err := n.jira.FindByLabel(ctx, label)
+		if err != nil {
+			n.log.Error("jira search", "err", err)
+			_ = msg.Nak()
+			return
+		}
+		if existing != "" {
+			if err := n.st.SetJiraKey(ctx, incKey, existing); err != nil {
+				_ = msg.Nak()
+				return
+			}
+			n.log.Info("jira ticket recovered", "ticket", existing)
+			_ = msg.Ack()
+			return
+		}
+
+		ticket, err := n.jira.CreateIssue(ctx, n.cfg.JiraIssueType, summary, desc, label)
 		if err != nil {
 			// Ошибка Jira не должна терять событие — вернём в очередь.
 			n.log.Error("jira create", "err", err)
