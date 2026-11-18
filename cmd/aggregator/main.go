@@ -7,11 +7,11 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/WOLFraMix/sentinel/internal/config"
 	"github.com/WOLFraMix/sentinel/internal/consumer"
+	"github.com/WOLFraMix/sentinel/internal/env"
 	"github.com/WOLFraMix/sentinel/internal/storage"
 )
 
@@ -20,7 +20,7 @@ func main() {
 		&slog.HandlerOptions{Level: slog.LevelInfo})))
 	log := slog.Default()
 
-	loadEnvFile()
+	env.Load(".env")
 	cfg := config.Load()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -50,27 +50,4 @@ func main() {
 		os.Exit(1)
 	}
 	log.Info("aggregator stopped gracefully")
-}
-
-// loadEnvFile — пока дублируем парсер .env (это 15 строк). Когда
-// появится третий компонент с общим кодом, вынесем в internal/config.
-func loadEnvFile() {
-	if _, err := os.Stat(".env"); err != nil {
-		return
-	}
-	data, err := os.ReadFile(".env")
-	if err != nil {
-		return
-	}
-	for _, line := range strings.Split(string(data), "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		if k, v, ok := strings.Cut(line, "="); ok {
-			if os.Getenv(strings.TrimSpace(k)) == "" {
-				_ = os.Setenv(strings.TrimSpace(k), strings.Trim(strings.TrimSpace(v), `"'`))
-			}
-		}
-	}
 }

@@ -7,11 +7,11 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 
 	"github.com/WOLFraMix/sentinel/internal/api"
 	"github.com/WOLFraMix/sentinel/internal/config"
+	"github.com/WOLFraMix/sentinel/internal/env"
 	"github.com/WOLFraMix/sentinel/internal/storage"
 )
 
@@ -19,7 +19,7 @@ func main() {
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout,
 		&slog.HandlerOptions{Level: slog.LevelInfo})))
 	log := slog.Default()
-	loadEnvFile()
+	env.Load(".env")
 	cfg := config.Load()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -36,25 +36,5 @@ func main() {
 	if err := api.New(st, log).Run(ctx, cfg.APIAddr); err != nil {
 		log.Error("api", "err", err)
 		os.Exit(1)
-	}
-}
-
-// loadEnvFile — тот же мини-парсер; на итерации Docker Compose
-// вынесем его в internal/env и уберём дублирование из трёх main.
-func loadEnvFile() {
-	if _, err := os.Stat(".env"); err != nil {
-		return
-	}
-	data, _ := os.ReadFile(".env")
-	for _, line := range strings.Split(string(data), "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		if k, v, ok := strings.Cut(line, "="); ok {
-			if os.Getenv(strings.TrimSpace(k)) == "" {
-				_ = os.Setenv(strings.TrimSpace(k), strings.Trim(strings.TrimSpace(v), `"'`))
-			}
-		}
 	}
 }

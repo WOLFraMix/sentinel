@@ -10,7 +10,6 @@ import (
 	"log/slog"
 	"os"
 	"os/signal"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -19,6 +18,7 @@ import (
 	"github.com/nats-io/nats.go/jetstream"
 
 	"github.com/WOLFraMix/sentinel/internal/config"
+	"github.com/WOLFraMix/sentinel/internal/env"
 	"github.com/WOLFraMix/sentinel/internal/events"
 	"github.com/WOLFraMix/sentinel/internal/jira"
 	"github.com/WOLFraMix/sentinel/internal/publisher"
@@ -29,7 +29,7 @@ func main() {
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout,
 		&slog.HandlerOptions{Level: slog.LevelInfo})))
 	log := slog.Default()
-	loadEnvFile()
+	env.Load(".env")
 	cfg := config.Load()
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -204,22 +204,4 @@ func (n *notifier) commentThrottled(ctx context.Context, inc *storage.Incident, 
 	n.lastComment[inc.Key] = time.Now()
 	n.mu.Unlock()
 	n.log.Info("jira commented", "ticket", inc.JiraKey, "pod", e.Namespace+"/"+e.Pod)
-}
-
-func loadEnvFile() {
-	if _, err := os.Stat(".env"); err != nil {
-		return
-	}
-	data, _ := os.ReadFile(".env")
-	for _, line := range strings.Split(string(data), "\n") {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") {
-			continue
-		}
-		if k, v, ok := strings.Cut(line, "="); ok {
-			if os.Getenv(strings.TrimSpace(k)) == "" {
-				_ = os.Setenv(strings.TrimSpace(k), strings.Trim(strings.TrimSpace(v), `"'`))
-			}
-		}
-	}
 }
